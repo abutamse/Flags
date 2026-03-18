@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weltflaggen</title>
+  <link rel="apple-touch-icon" href="icon.jpeg" />
+  <link rel="icon" type="image/jpeg" href="icon.jpeg" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Flaggen" />
+  <link rel="manifest" href="data:application/manifest+json,{&quot;name&quot;:&quot;Weltflaggen&quot;,&quot;short_name&quot;:&quot;Flaggen&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#0a0a0a&quot;,&quot;theme_color&quot;:&quot;#c9a84c&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;icon.jpeg&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/jpeg&quot;}]}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e;
+      --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.14);
+      --text: #f0ede8; --text-muted: #888; --text-faint: #444;
+      --gold: #c9a84c; --gold-light: #f0d080;
+      --radius: 14px; --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201,168,76,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse 40% 30% at 80% 80%, rgba(201,168,76,0.04) 0%, transparent 50%);
+    }
+    .wrap { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+    .header { text-align: center; margin-bottom: 2.5rem; }
+    .header h1 { font-family: 'Playfair Display', serif; font-size: clamp(36px,6vw,56px); font-weight: 400; color: var(--text); letter-spacing: -0.5px; margin-bottom: 0.4rem; }
+    .header h1 em { color: var(--gold); font-style: normal; }
+    .header p { font-size: 13px; color: var(--text-muted); font-weight: 300; letter-spacing: 0.5px; }
+    .search-wrap { position: relative; }
+    .search-bar { display: flex; align-items: center; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
+    .search-bar:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.12); }
+    .search-icon { padding: 0 14px 0 18px; color: var(--text-muted); font-size: 18px; flex-shrink: 0; display: flex; align-items: center; }
+    .search-bar input { flex: 1; height: 52px; background: transparent; border: none; outline: none; font-size: 16px; font-family: 'DM Sans', sans-serif; color: var(--text); caret-color: var(--gold); }
+    .search-bar input::placeholder { color: var(--text-faint); }
+    .clear-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0 16px; font-size: 18px; display: none; }
+    .clear-btn.visible { display: block; }
+    .clear-btn:hover { color: var(--text); }
+    .suggestions { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); z-index: 100; display: none; max-height: 340px; overflow-y: auto; }
+    .suggestions.open { display: block; }
+    .suggestions::-webkit-scrollbar { width: 4px; }
+    .suggestions::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    .suggestion-item { display: flex; align-items: center; gap: 14px; padding: 10px 16px; cursor: pointer; transition: background 0.1s; }
+    .suggestion-item:hover, .suggestion-item.active { background: var(--surface2); }
+    .s-flag { width: 36px; height: 24px; border-radius: 3px; overflow: hidden; flex-shrink: 0; background: var(--surface2); border: 0.5px solid var(--border); display:flex; align-items:center; justify-content:center; }
+    .s-flag img { width: 100%; height: 100%; object-fit: cover; }
+    .s-names { flex: 1; }
+    .s-name-de { font-size: 14px; font-weight: 500; color: var(--text); }
+    .s-name-en { font-size: 12px; color: var(--text-muted); }
+    .s-name-ar { font-family: serif; direction: rtl; }
+    .results-section { margin-top: 2.5rem; }
+    .results-label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1rem; }
+    .flag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .flag-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: border-color 0.2s, transform 0.15s; animation: popIn 0.25s ease both; }
+    .flag-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    .flag-img-wrap { width: 100%; aspect-ratio: 3/2; background: var(--surface2); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .flag-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .flag-img-wrap .placeholder { font-size: 13px; color: var(--text-faint); font-family: monospace; }
+    .flag-info { padding: 10px 12px; }
+    .flag-name-de { font-size: 13px; font-weight: 500; color: var(--text); }
+    .flag-name-en { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .flag-name-ar { font-size: 11px; color: var(--text-muted); direction: rtl; text-align: right; margin-top: 2px; font-family: serif; }
+    .single-result { margin-top: 2rem; display: none; animation: fadeIn 0.3s ease; }
+    .single-result.show { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .flag-hero { display: flex; gap: 2rem; align-items: flex-start; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 18px; padding: 2rem; }
+    .flag-hero-img { width: 260px; flex-shrink: 0; aspect-ratio: 3/2; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface2); border: 0.5px solid var(--border); display:flex; align-items:center; justify-content:center; }
+    .flag-hero-img img { width: 100%; height: 100%; object-fit: cover; }
+    .flag-hero-info h2 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 400; color: var(--text); margin-bottom: 6px; }
+    .names { display: flex; flex-direction: column; gap: 4px; margin-bottom: 1.25rem; }
+    .name-row { display: flex; align-items: center; gap: 8px; }
+    .name-lang { font-size: 10px; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; min-width: 28px; }
+    .name-val { font-size: 14px; color: var(--text-muted); }
+    .name-val.ar { font-family: serif; font-size: 16px; direction: rtl; }
+    .code-badge { font-size: 11px; color: var(--text-faint); font-family: monospace; background: var(--surface2); padding: 4px 10px; border-radius: 4px; display: inline-block; }
+    @media (max-width: 600px) {
+      .flag-hero { flex-direction: column; gap: 1.25rem; }
+      .flag-hero-img { width: 100%; }
+      .flag-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+    }
+    #installBtn { display: none; position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999; background: var(--gold); color: #0a0a0a; border: none; border-radius: 999px; padding: 10px 18px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    #installBtn:hover { background: var(--gold-light); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>Welt<em>flaggen</em></h1>
+    <p>Suche auf Deutsch · English · عربي</p>
+  </div>
+  <div class="search-wrap">
+    <div class="search-bar">
+      <span class="search-icon">⚑</span>
+      <input type="text" id="searchInput" placeholder="Deutschland · Germany · ألمانيا" autocomplete="off" spellcheck="false" />
+      <button class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</button>
+    </div>
+    <div class="suggestions" id="suggestions"></div>
+  </div>
+  <div class="single-result" id="singleResult"></div>
+  <div class="results-section" id="resultsSection">
+    <div class="results-label" id="resultsLabel">Alle Länder</div>
+    <div class="flag-grid" id="flagGrid"></div>
+  </div>
+</div>
+<button id="installBtn" onclick="installPWA()">+ App installieren</button>
+
+<script>
+// Dateiname = ISO-2-Code + .png  →  de.png, fr.png, sy.png usw.
+// Lege deine Flaggenbilder einfach als  de.png, fr.png  usw. neben diese HTML-Datei.
+
+const COUNTRIES = [
+  // Europa
+  {code:'de',de:'Deutschland',en:'Germany',ar:'ألمانيا'},
+  {code:'at',de:'Österreich',en:'Austria',ar:'النمسا'},
+  {code:'ch',de:'Schweiz',en:'Switzerland',ar:'سويسرا'},
+  {code:'fr',de:'Frankreich',en:'France',ar:'فرنسا'},
+  {code:'es',de:'Spanien',en:'Spain',ar:'إسبانيا'},
+  {code:'pt',de:'Portugal',en:'Portugal',ar:'البرتغال'},
+  {code:'it',de:'Italien',en:'Italy',ar:'إيطاليا'},
+  {code:'nl',de:'Niederlande',en:'Netherlands',ar:'هولندا'},
+  {code:'be',de:'Belgien',en:'Belgium',ar:'بلجيكا'},
+  {code:'lu',de:'Luxemburg',en:'Luxembourg',ar:'لوكسمبورغ'},
+  {code:'dk',de:'Dänemark',en:'Denmark',ar:'الدنمارك'},
+  {code:'se',de:'Schweden',en:'Sweden',ar:'السويد'},
+  {code:'no',de:'Norwegen',en:'Norway',ar:'النرويج'},
+  {code:'fi',de:'Finnland',en:'Finland',ar:'فنلندا'},
+  {code:'is',de:'Island',en:'Iceland',ar:'أيسلندا'},
+  {code:'ie',de:'Irland',en:'Ireland',ar:'أيرلندا'},
+  {code:'gb',de:'Vereinigtes Königreich',en:'United Kingdom',ar:'المملكة المتحدة'},
+  {code:'gr',de:'Griechenland',en:'Greece',ar:'اليونان'},
+  {code:'tr',de:'Türkei',en:'Turkey',ar:'تركيا'},
+  {code:'ru',de:'Russland',en:'Russia',ar:'روسيا'},
+  {code:'ua',de:'Ukraine',en:'Ukraine',ar:'أوكرانيا'},
+  {code:'pl',de:'Polen',en:'Poland',ar:'بولندا'},
+  {code:'cz',de:'Tschechien',en:'Czech Republic',ar:'جمهورية التشيك'},
+  {code:'sk',de:'Slowakei',en:'Slovakia',ar:'سلوفاكيا'},
+  {code:'hu',de:'Ungarn',en:'Hungary',ar:'المجر'},
+  {code:'ro',de:'Rumänien',en:'Romania',ar:'رومانيا'},
+  {code:'bg',de:'Bulgarien',en:'Bulgaria',ar:'بلغاريا'},
+  {code:'rs',de:'Serbien',en:'Serbia',ar:'صربيا'},
+  {code:'hr',de:'Kroatien',en:'Croatia',ar:'كرواتيا'},
+  {code:'ba',de:'Bosnien und Herzegowina',en:'Bosnia and Herzegovina',ar:'البوسنة والهرسك'},
+  {code:'si',de:'Slowenien',en:'Slovenia',ar:'سلوفينيا'},
+  {code:'al',de:'Albanien',en:'Albania',ar:'ألبانيا'},
+  {code:'mk',de:'Nordmazedonien',en:'North Macedonia',ar:'مقدونيا الشمالية'},
+  {code:'me',de:'Montenegro',en:'Montenegro',ar:'الجبل الأسود'},
+  {code:'xk',de:'Kosovo',en:'Kosovo',ar:'كوسوفو'},
+  {code:'md',de:'Moldau',en:'Moldova',ar:'مولدوفا'},
+  {code:'by',de:'Weißrussland',en:'Belarus',ar:'بيلاروسيا'},
+  {code:'lt',de:'Litauen',en:'Lithuania',ar:'ليتوانيا'},
+  {code:'lv',de:'Lettland',en:'Latvia',ar:'لاتفيا'},
+  {code:'ee',de:'Estland',en:'Estonia',ar:'إستونيا'},
+  {code:'cy',de:'Zypern',en:'Cyprus',ar:'قبرص'},
+  {code:'mt',de:'Malta',en:'Malta',ar:'مالطا'},
+  {code:'li',de:'Liechtenstein',en:'Liechtenstein',ar:'ليختنشتاين'},
+  {code:'mc',de:'Monaco',en:'Monaco',ar:'موناكو'},
+  {code:'sm',de:'San Marino',en:'San Marino',ar:'سان مارينو'},
+  {code:'va',de:'Vatikanstadt',en:'Vatican City',ar:'مدينة الفاتيكان'},
+  {code:'ad',de:'Andorra',en:'Andorra',ar:'أندورا'},
+  {code:'ge',de:'Georgien',en:'Georgia',ar:'جورجيا'},
+  {code:'am',de:'Armenien',en:'Armenia',ar:'أرمينيا'},
+  {code:'az',de:'Aserbaidschan',en:'Azerbaijan',ar:'أذربيجان'},
+  {code:'gb-eng',de:'England',en:'England',ar:'إنجلترا'},
+  {code:'gb-sct',de:'Schottland',en:'Scotland',ar:'اسكتلندا'},
+  {code:'gb-wls',de:'Wales',en:'Wales',ar:'ويلز'},
+  // Naher Osten & Arabisch
+  {code:'sy',de:'Syrien',en:'Syria',ar:'سوريا'},
+  {code:'iq',de:'Irak',en:'Iraq',ar:'العراق'},
+  {code:'ir',de:'Iran',en:'Iran',ar:'إيران'},
+  {code:'sa',de:'Saudi-Arabien',en:'Saudi Arabia',ar:'المملكة العربية السعودية'},
+  {code:'ae',de:'Vereinigte Arabische Emirate',en:'United Arab Emirates',ar:'الإمارات العربية المتحدة'},
+  {code:'qa',de:'Katar',en:'Qatar',ar:'قطر'},
+  {code:'kw',de:'Kuwait',en:'Kuwait',ar:'الكويت'},
+  {code:'bh',de:'Bahrain',en:'Bahrain',ar:'البحرين'},
+  {code:'om',de:'Oman',en:'Oman',ar:'عُمان'},
+  {code:'ye',de:'Jemen',en:'Yemen',ar:'اليمن'},
+  {code:'jo',de:'Jordanien',en:'Jordan',ar:'الأردن'},
+  {code:'lb',de:'Libanon',en:'Lebanon',ar:'لبنان'},
+  {code:'il',de:'Israel',en:'Israel',ar:'إسرائيل'},
+  {code:'ps',de:'Palästina',en:'Palestine',ar:'فلسطين'},
+  {code:'eg',de:'Ägypten',en:'Egypt',ar:'مصر'},
+  {code:'ly',de:'Libyen',en:'Libya',ar:'ليبيا'},
+  {code:'tn',de:'Tunesien',en:'Tunisia',ar:'تونس'},
+  {code:'dz',de:'Algerien',en:'Algeria',ar:'الجزائر'},
+  {code:'ma',de:'Marokko',en:'Morocco',ar:'المغرب'},
+  {code:'mr',de:'Mauretanien',en:'Mauritania',ar:'موريتانيا'},
+  {code:'sd',de:'Sudan',en:'Sudan',ar:'السودان'},
+  {code:'so',de:'Somalia',en:'Somalia',ar:'الصومال'},
+  {code:'dj',de:'Dschibuti',en:'Djibouti',ar:'جيبوتي'},
+  {code:'km',de:'Komoren',en:'Comoros',ar:'جزر القمر'},
+  // Asien
+  {code:'cn',de:'China',en:'China',ar:'الصين'},
+  {code:'jp',de:'Japan',en:'Japan',ar:'اليابان'},
+  {code:'kr',de:'Südkorea',en:'South Korea',ar:'كوريا الجنوبية'},
+  {code:'kp',de:'Nordkorea',en:'North Korea',ar:'كوريا الشمالية'},
+  {code:'in',de:'Indien',en:'India',ar:'الهند'},
+  {code:'pk',de:'Pakistan',en:'Pakistan',ar:'باكستان'},
+  {code:'af',de:'Afghanistan',en:'Afghanistan',ar:'أفغانستان'},
+  {code:'bd',de:'Bangladesch',en:'Bangladesh',ar:'بنغلاديش'},
+  {code:'lk',de:'Sri Lanka',en:'Sri Lanka',ar:'سريلانكا'},
+  {code:'np',de:'Nepal',en:'Nepal',ar:'نيبال'},
+  {code:'bt',de:'Bhutan',en:'Bhutan',ar:'بوتان'},
+  {code:'mv',de:'Malediven',en:'Maldives',ar:'جزر المالديف'},
+  {code:'mm',de:'Myanmar',en:'Myanmar',ar:'ميانمار'},
+  {code:'th',de:'Thailand',en:'Thailand',ar:'تايلاند'},
+  {code:'vn',de:'Vietnam',en:'Vietnam',ar:'فيتنام'},
+  {code:'kh',de:'Kambodscha',en:'Cambodia',ar:'كمبوديا'},
+  {code:'la',de:'Laos',en:'Laos',ar:'لاوس'},
+  {code:'my',de:'Malaysia',en:'Malaysia',ar:'ماليزيا'},
+  {code:'sg',de:'Singapur',en:'Singapore',ar:'سنغافورة'},
+  {code:'id',de:'Indonesien',en:'Indonesia',ar:'إندونيسيا'},
+  {code:'ph',de:'Philippinen',en:'Philippines',ar:'الفلبين'},
+  {code:'bn',de:'Brunei',en:'Brunei',ar:'بروناي'},
+  {code:'tl',de:'Osttimor',en:'East Timor',ar:'تيمور الشرقية'},
+  {code:'mn',de:'Mongolei',en:'Mongolia',ar:'منغوليا'},
+  {code:'tw',de:'Taiwan',en:'Taiwan',ar:'تايوان'},
+  {code:'kz',de:'Kasachstan',en:'Kazakhstan',ar:'كازاخستان'},
+  {code:'uz',de:'Usbekistan',en:'Uzbekistan',ar:'أوزبكستان'},
+  {code:'tm',de:'Turkmenistan',en:'Turkmenistan',ar:'تركمانستان'},
+  {code:'tj',de:'Tadschikistan',en:'Tajikistan',ar:'طاجيكستان'},
+  {code:'kg',de:'Kirgisistan',en:'Kyrgyzstan',ar:'قيرغيزستان'},
+  // Afrika
+  {code:'ng',de:'Nigeria',en:'Nigeria',ar:'نيجيريا'},
+  {code:'za',de:'Südafrika',en:'South Africa',ar:'جنوب أفريقيا'},
+  {code:'ke',de:'Kenia',en:'Kenya',ar:'كينيا'},
+  {code:'et',de:'Äthiopien',en:'Ethiopia',ar:'إثيوبيا'},
+  {code:'gh',de:'Ghana',en:'Ghana',ar:'غانا'},
+  {code:'sn',de:'Senegal',en:'Senegal',ar:'السنغال'},
+  {code:'ci',de:'Elfenbeinküste',en:'Ivory Coast',ar:'ساحل العاج'},
+  {code:'cm',de:'Kamerun',en:'Cameroon',ar:'الكاميرون'},
+  {code:'ao',de:'Angola',en:'Angola',ar:'أنغولا'},
+  {code:'mz',de:'Mosambik',en:'Mozambique',ar:'موزمبيق'},
+  {code:'tz',de:'Tansania',en:'Tanzania',ar:'تنزانيا'},
+  {code:'zw',de:'Simbabwe',en:'Zimbabwe',ar:'زيمبابوي'},
+  {code:'zm',de:'Sambia',en:'Zambia',ar:'زامبيا'},
+  {code:'ug',de:'Uganda',en:'Uganda',ar:'أوغندا'},
+  {code:'rw',de:'Ruanda',en:'Rwanda',ar:'رواندا'},
+  {code:'cd',de:'Demokratische Republik Kongo',en:'DR Congo',ar:'جمهورية الكونغو الديمقراطية'},
+  {code:'cg',de:'Republik Kongo',en:'Republic of Congo',ar:'جمهورية الكونغو'},
+  {code:'ga',de:'Gabun',en:'Gabon',ar:'الغابون'},
+  {code:'ml',de:'Mali',en:'Mali',ar:'مالي'},
+  {code:'ne',de:'Niger',en:'Niger',ar:'النيجر'},
+  {code:'bf',de:'Burkina Faso',en:'Burkina Faso',ar:'بوركينا فاسو'},
+  {code:'gn',de:'Guinea',en:'Guinea',ar:'غينيا'},
+  {code:'sl',de:'Sierra Leone',en:'Sierra Leone',ar:'سيراليون'},
+  {code:'lr',de:'Liberia',en:'Liberia',ar:'ليبيريا'},
+  {code:'tg',de:'Togo',en:'Togo',ar:'توغو'},
+  {code:'bj',de:'Benin',en:'Benin',ar:'بنين'},
+  {code:'na',de:'Namibia',en:'Namibia',ar:'ناميبيا'},
+  {code:'bw',de:'Botswana',en:'Botswana',ar:'بوتسوانا'},
+  {code:'ls',de:'Lesotho',en:'Lesotho',ar:'ليسوتو'},
+  {code:'sz',de:'Eswatini',en:'Eswatini',ar:'إيسواتيني'},
+  {code:'mg',de:'Madagaskar',en:'Madagascar',ar:'مدغشقر'},
+  {code:'er',de:'Eritrea',en:'Eritrea',ar:'إريتريا'},
+  {code:'td',de:'Tschad',en:'Chad',ar:'تشاد'},
+  {code:'cf',de:'Zentralafrikanische Republik',en:'Central African Republic',ar:'جمهورية أفريقيا الوسطى'},
+  {code:'ss',de:'Südsudan',en:'South Sudan',ar:'جنوب السودان'},
+  {code:'mw',de:'Malawi',en:'Malawi',ar:'مالاوي'},
+  {code:'gw',de:'Guinea-Bissau',en:'Guinea-Bissau',ar:'غينيا بيساو'},
+  {code:'cv',de:'Kap Verde',en:'Cape Verde',ar:'الرأس الأخضر'},
+  {code:'st',de:'São Tomé und Príncipe',en:'São Tomé and Príncipe',ar:'سان تومي وبرينسيبي'},
+  {code:'gq',de:'Äquatorialguinea',en:'Equatorial Guinea',ar:'غينيا الاستوائية'},
+  {code:'bi',de:'Burundi',en:'Burundi',ar:'بوروندي'},
+  {code:'mu',de:'Mauritius',en:'Mauritius',ar:'موريشيوس'},
+  {code:'sc',de:'Seychellen',en:'Seychelles',ar:'سيشل'},
+  // Amerika
+  {code:'us',de:'Vereinigte Staaten',en:'United States',ar:'الولايات المتحدة'},
+  {code:'ca',de:'Kanada',en:'Canada',ar:'كندا'},
+  {code:'mx',de:'Mexiko',en:'Mexico',ar:'المكسيك'},
+  {code:'br',de:'Brasilien',en:'Brazil',ar:'البرازيل'},
+  {code:'ar',de:'Argentinien',en:'Argentina',ar:'الأرجنتين'},
+  {code:'co',de:'Kolumbien',en:'Colombia',ar:'كولومبيا'},
+  {code:'cl',de:'Chile',en:'Chile',ar:'تشيلي'},
+  {code:'pe',de:'Peru',en:'Peru',ar:'بيرو'},
+  {code:'ve',de:'Venezuela',en:'Venezuela',ar:'فنزويلا'},
+  {code:'bo',de:'Bolivien',en:'Bolivia',ar:'بوليفيا'},
+  {code:'ec',de:'Ecuador',en:'Ecuador',ar:'الإكوادور'},
+  {code:'py',de:'Paraguay',en:'Paraguay',ar:'باراغواي'},
+  {code:'uy',de:'Uruguay',en:'Uruguay',ar:'أوروغواي'},
+  {code:'gy',de:'Guyana',en:'Guyana',ar:'غيانا'},
+  {code:'sr',de:'Suriname',en:'Suriname',ar:'سورينام'},
+  {code:'cu',de:'Kuba',en:'Cuba',ar:'كوبا'},
+  {code:'do',de:'Dominikanische Republik',en:'Dominican Republic',ar:'جمهورية الدومينيكان'},
+  {code:'ht',de:'Haiti',en:'Haiti',ar:'هايتي'},
+  {code:'jm',de:'Jamaika',en:'Jamaica',ar:'جامايكا'},
+  {code:'tt',de:'Trinidad und Tobago',en:'Trinidad and Tobago',ar:'ترينيداد وتوباغو'},
+  {code:'cr',de:'Costa Rica',en:'Costa Rica',ar:'كوستاريكا'},
+  {code:'pa',de:'Panama',en:'Panama',ar:'بنما'},
+  {code:'gt',de:'Guatemala',en:'Guatemala',ar:'غواتيمالا'},
+  {code:'hn',de:'Honduras',en:'Honduras',ar:'هندوراس'},
+  {code:'sv',de:'El Salvador',en:'El Salvador',ar:'السلفادور'},
+  {code:'ni',de:'Nicaragua',en:'Nicaragua',ar:'نيكاراغوا'},
+  {code:'bz',de:'Belize',en:'Belize',ar:'بليز'},
+  {code:'bb',de:'Barbados',en:'Barbados',ar:'بربادوس'},
+  {code:'lc',de:'St. Lucia',en:'Saint Lucia',ar:'سانت لوسيا'},
+  {code:'vc',de:'St. Vincent',en:'Saint Vincent',ar:'سانت فنسنت'},
+  {code:'gd',de:'Grenada',en:'Grenada',ar:'غرينادا'},
+  {code:'ag',de:'Antigua und Barbuda',en:'Antigua and Barbuda',ar:'أنتيغوا وبربودا'},
+  {code:'kn',de:'St. Kitts und Nevis',en:'Saint Kitts and Nevis',ar:'سانت كيتس ونيفيس'},
+  {code:'dm',de:'Dominica',en:'Dominica',ar:'دومينيكا'},
+  {code:'bs',de:'Bahamas',en:'Bahamas',ar:'باهاماس'},
+  // Ozeanien
+  {code:'au',de:'Australien',en:'Australia',ar:'أستراليا'},
+  {code:'nz',de:'Neuseeland',en:'New Zealand',ar:'نيوزيلندا'},
+  {code:'pg',de:'Papua-Neuguinea',en:'Papua New Guinea',ar:'بابوا غينيا الجديدة'},
+  {code:'fj',de:'Fidschi',en:'Fiji',ar:'فيجي'},
+  {code:'to',de:'Tonga',en:'Tonga',ar:'تونغا'},
+  {code:'ws',de:'Samoa',en:'Samoa',ar:'ساموا'},
+  {code:'vu',de:'Vanuatu',en:'Vanuatu',ar:'فانواتو'},
+  {code:'pw',de:'Palau',en:'Palau',ar:'بالاو'},
+  {code:'fm',de:'Mikronesien',en:'Micronesia',ar:'ميكرونيزيا'},
+  {code:'mh',de:'Marshallinseln',en:'Marshall Islands',ar:'جزر مارشال'},
+  {code:'ki',de:'Kiribati',en:'Kiribati',ar:'كيريباتي'},
+  {code:'nr',de:'Nauru',en:'Nauru',ar:'ناورو'},
+  {code:'sb',de:'Salomonen',en:'Solomon Islands',ar:'جزر سليمان'},
+  {code:'tv',de:'Tuvalu',en:'Tuvalu',ar:'توفالو'},
+];
+
+// Bild: code.png  →  de.png, fr.png, sy.png ...
+function mkImg(code) {
+  const img = document.createElement('img');
+  img.src = code + '.png';
+  img.alt = code;
+  img.loading = 'lazy';
+  img.onerror = function() {
+    this.style.display = 'none';
+    const p = document.createElement('span');
+    p.className = 'placeholder';
+    p.textContent = code.toUpperCase();
+    this.parentNode.appendChild(p);
+  };
+  return img;
+}
+
+const input = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearBtn');
+const suggestionsEl = document.getElementById('suggestions');
+const flagGrid = document.getElementById('flagGrid');
+const resultsLabel = document.getElementById('resultsLabel');
+const singleResult = document.getElementById('singleResult');
+const resultsSection = document.getElementById('resultsSection');
+let activeIdx = -1;
+
+function normalize(s) {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ß/g,'ss');
+}
+function matches(c,q) {
+  const nq = normalize(q);
+  return normalize(c.de).includes(nq) || normalize(c.en).includes(nq) || c.ar.includes(q);
+}
+function startsWith(c,q) {
+  const nq = normalize(q);
+  return normalize(c.de).startsWith(nq) || normalize(c.en).startsWith(nq) || c.ar.startsWith(q);
+}
+
+function renderGrid(list, label) {
+  resultsLabel.textContent = label || `${list.length} Länder`;
+  flagGrid.innerHTML = '';
+  singleResult.classList.remove('show');
+  singleResult.innerHTML = '';
+  resultsSection.style.display = '';
+  list.forEach((c, i) => {
+    const card = document.createElement('div');
+    card.className = 'flag-card';
+    card.style.animationDelay = (i * 0.015) + 's';
+    card.onclick = () => showSingle(c);
+    const iw = document.createElement('div'); iw.className = 'flag-img-wrap'; iw.appendChild(mkImg(c.code));
+    const info = document.createElement('div'); info.className = 'flag-info';
+    info.innerHTML = `<div class="flag-name-de">${c.de}</div><div class="flag-name-en">${c.en}</div><div class="flag-name-ar">${c.ar}</div>`;
+    card.appendChild(iw); card.appendChild(info); flagGrid.appendChild(card);
+  });
+}
+
+function showSingle(c) {
+  suggestionsEl.classList.remove('open');
+  input.value = c.de;
+  clearBtn.classList.add('visible');
+  resultsSection.style.display = 'none';
+  singleResult.innerHTML = `
+    <div class="flag-hero">
+      <div class="flag-hero-img"></div>
+      <div class="flag-hero-info">
+        <h2>${c.de}</h2>
+        <div class="names">
+          <div class="name-row"><span class="name-lang">DE</span><span class="name-val">${c.de}</span></div>
+          <div class="name-row"><span class="name-lang">EN</span><span class="name-val">${c.en}</span></div>
+          <div class="name-row"><span class="name-lang">AR</span><span class="name-val ar">${c.ar}</span></div>
+        </div>
+        <div class="code-badge">Datei: ${c.code}.png</div>
+      </div>
+    </div>`;
+  singleResult.querySelector('.flag-hero-img').appendChild(mkImg(c.code));
+  singleResult.classList.add('show');
+}
+
+function renderSuggestions(q) {
+  if (!q) { suggestionsEl.classList.remove('open'); return; }
+  const sw = COUNTRIES.filter(c => startsWith(c, q)).slice(0, 8);
+  if (!sw.length) { suggestionsEl.classList.remove('open'); return; }
+  suggestionsEl.innerHTML = '';
+  sw.forEach(c => {
+    const item = document.createElement('div'); item.className = 'suggestion-item'; item.onclick = () => showSingle(c);
+    const fd = document.createElement('div'); fd.className = 's-flag'; fd.appendChild(mkImg(c.code));
+    const nm = document.createElement('div'); nm.className = 's-names';
+    nm.innerHTML = `<div class="s-name-de">${c.de}</div><div class="s-name-en">${c.en} · <span class="s-name-ar">${c.ar}</span></div>`;
+    item.appendChild(fd); item.appendChild(nm); suggestionsEl.appendChild(item);
+  });
+  activeIdx = -1; suggestionsEl.classList.add('open');
+}
+
+input.addEventListener('input', () => {
+  const q = input.value.trim();
+  clearBtn.classList.toggle('visible', q.length > 0);
+  if (!q) { suggestionsEl.classList.remove('open'); singleResult.classList.remove('show'); resultsSection.style.display=''; renderGrid(COUNTRIES,'Alle Länder'); return; }
+  renderSuggestions(q);
+  const found = COUNTRIES.filter(c => matches(c, q));
+  if (found.length > 0 && found.length < COUNTRIES.length) { renderGrid(found, `${found.length} Ergebnis${found.length!==1?'se':''} für „${q}"`); resultsSection.style.display=''; singleResult.classList.remove('show'); }
+});
+
+input.addEventListener('keydown', e => {
+  const items = suggestionsEl.querySelectorAll('.suggestion-item');
+  if (e.key==='ArrowDown') { e.preventDefault(); activeIdx=Math.min(activeIdx+1,items.length-1); items.forEach((el,i)=>el.classList.toggle('active',i===activeIdx)); }
+  else if (e.key==='ArrowUp') { e.preventDefault(); activeIdx=Math.max(activeIdx-1,-1); items.forEach((el,i)=>el.classList.toggle('active',i===activeIdx)); }
+  else if (e.key==='Enter') { if(activeIdx>=0&&items[activeIdx]){items[activeIdx].click();}else{suggestionsEl.classList.remove('open');const found=COUNTRIES.filter(c=>matches(c,input.value.trim()));if(found.length===1)showSingle(found[0]);} }
+  else if (e.key==='Escape') { suggestionsEl.classList.remove('open'); }
+});
+
+document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) suggestionsEl.classList.remove('open'); });
+
+function clearSearch() {
+  input.value=''; clearBtn.classList.remove('visible'); suggestionsEl.classList.remove('open');
+  singleResult.classList.remove('show'); resultsSection.style.display='';
+  renderGrid(COUNTRIES,'Alle Länder'); input.focus();
+}
+
+renderGrid(COUNTRIES, 'Alle Länder');
+
+if ('serviceWorker' in navigator) {
+  const sw=`const C='flaggen-v3';
+self.addEventListener('install',e=>{self.skipWaiting();});
+self.addEventListener('activate',e=>{self.clients.claim();});
+self.addEventListener('fetch',e=>{e.respondWith(caches.open(C).then(cache=>cache.match(e.request).then(r=>r||fetch(e.request).then(res=>{cache.put(e.request,res.clone());return res;}))));});`;
+  const blob=new Blob([sw],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('installBtn').style.display='block';});
+function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('installBtn').style.display='none';});}
+window.addEventListener('appinstalled',()=>{document.getElementById('installBtn').style.display='none';});
+</script>
+</body>
+</html>
